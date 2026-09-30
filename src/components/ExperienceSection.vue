@@ -40,7 +40,7 @@
 
             <!-- Card -->
             <div
-              class="w-full md:w-5/12 ml-12 md:ml-0 group"
+              class="w-[calc(100%-3rem)] md:w-5/12 ml-12 md:ml-0 group"
               :class="index % 2 === 0 ? 'md:pr-10' : 'md:pl-10'"
             >
               <div class="exp-inner glass-effect rounded-2xl p-6 transition-all duration-400 group-hover:border-luxury-gold/25 group-hover:shadow-gold-md">

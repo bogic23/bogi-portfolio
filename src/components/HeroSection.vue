@@ -39,7 +39,7 @@
           <div class="inline-flex items-center gap-2 mt-10 pt-8 mb-8 hero-badge">
             <span class="w-2 h-2 rounded-full bg-luxury-gold animate-pulse-gold"></span>
             <span class="text-xs font-semibold tracking-widest uppercase text-luxury-gold">
-              Available for work
+              Open for Collaboration
             </span>
           </div>
 

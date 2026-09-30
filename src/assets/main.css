@@ -3,6 +3,17 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────
+   LOCAL TYPEFACE — Faculty Glyphic (main font)
+───────────────────────────────────────────── */
+@font-face {
+  font-family: 'Faculty Glyphic';
+  src: url('./fonts/FacultyGlyphic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─────────────────────────────────────────────
    DESIGN TOKENS & BASE
 ───────────────────────────────────────────── */
 @layer base {
@@ -513,4 +524,48 @@
 /* Section spacing */
 section {
   position: relative;
+}
+
+/* ─────────────────────────────────────────────
+   MOBILE COMPACT MODE
+   Shrinks type + spacing proportionally on phones
+   (Tailwind utilities are rem-based, so lowering the
+   root font-size scales the whole design at once)
+───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  html {
+    font-size: 14px;
+  }
+
+  /* Tighter section rhythm */
+  section.py-28 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .section-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .section-header h2 {
+    font-size: 1.9rem;
+    line-height: 1.25;
+  }
+
+  .section-header p {
+    font-size: 0.9rem;
+  }
+
+  /* Hero headline stays bold but fits small screens */
+  .hero-heading {
+    font-size: 2.4rem !important;
+    line-height: 1.15;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem !important;
+  }
+
+  /* Floating nav button sits clear of thumb zone content */
+  /* (size itself scales via root font-size) */
 }

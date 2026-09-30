@@ -19,8 +19,8 @@ export default {
         }
       },
       fontFamily: {
-        'display': ['Playfair Display', 'serif'],
-        'body': ['Inter', 'sans-serif'],
+        'display': ['"Faculty Glyphic"', 'Playfair Display', 'serif'],
+        'body': ['"Faculty Glyphic"', 'Inter', 'sans-serif'],
       },
       backgroundImage: {
         'gold-radial': 'radial-gradient(ellipse at center, #d4af37 0%, #b8962e 100%)',
