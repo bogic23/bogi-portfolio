@@ -52,7 +52,7 @@
         <!-- Right — Content -->
         <div ref="contentRef" class="reveal-right">
           <h3 class="text-2xl font-display font-semibold mb-5 text-luxury-gold">
-            A passionate developer based in San Francisco
+            A passionate developer based in Jakarta
           </h3>
 
           <p class="text-gray-400 mb-5 leading-relaxed">
@@ -132,10 +132,10 @@ const infoRefs   = ref([])
 const counterRefs = ref([])
 
 const infoItems = [
-  { icon: '📍', label: 'Location',   value: 'San Francisco, CA' },
+  { icon: '📍', label: 'Location',   value: 'Jakarta, Indonesia' },
   { icon: '💼', label: 'Experience', value: '5+ Years' },
-  { icon: '🎓', label: 'Degree',     value: 'BS Computer Science' },
-  { icon: '🌐', label: 'Languages',  value: 'English, Mandarin' },
+  { icon: '🎓', label: 'Degree',     value: 'Electrical Engineering' },
+  { icon: '🌐', label: 'Languages',  value: 'English, Japan, German' },
 ]
 
 // Animated counters

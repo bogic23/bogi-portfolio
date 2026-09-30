@@ -1,6 +1,23 @@
 <template>
   <section id="home" class="min-h-screen flex items-center justify-center relative overflow-hidden">
 
+    <!-- ── Responsive Background Photo ── -->
+    <div class="absolute inset-0" aria-hidden="true">
+      <img
+        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80&auto=format&fit=crop"
+        srcset="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=640&q=70&auto=format&fit=crop 640w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1280&q=75&auto=format&fit=crop 1280w, https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80&auto=format&fit=crop 1920w"
+        sizes="100vw"
+        alt=""
+        fetchpriority="high"
+        decoding="async"
+        class="hero-bg absolute inset-0 w-full h-full object-cover object-center md:object-[center_25%]"
+      />
+      <!-- Readability veils + theme blend -->
+      <div class="absolute inset-0 bg-luxury-darker/55"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-luxury-darker/85 via-luxury-darker/35 to-luxury-darker"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-luxury-darker/60 via-transparent to-luxury-darker/40"></div>
+    </div>
+
     <!-- ── Animated Orb Background ── -->
     <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
       <!-- Primary orbs -->
@@ -19,7 +36,7 @@
         <!-- ── Left Content ── -->
         <div class="flex-1 text-center lg:text-left">
           <!-- Badge -->
-          <div class="inline-flex items-center gap-2 mb-8 hero-badge">
+          <div class="inline-flex items-center gap-2 mt-10 pt-8 mb-8 hero-badge">
             <span class="w-2 h-2 rounded-full bg-luxury-gold animate-pulse-gold"></span>
             <span class="text-xs font-semibold tracking-widest uppercase text-luxury-gold">
               Available for work
@@ -29,7 +46,7 @@
           <!-- Heading -->
           <h1 class="text-5xl md:text-6xl xl:text-7xl font-display font-bold mb-5 leading-[1.1] hero-heading">
             <span class="block text-white/90 text-3xl md:text-4xl font-light mb-2 tracking-wide">Hello, I'm</span>
-            <span class="gold-gradient block">Alex Chen</span>
+            <span class="gold-gradient block">Abednego Bogi</span>
           </h1>
 
           <!-- Typewriter subtitle -->
@@ -85,8 +102,8 @@
             <!-- Avatar image -->
             <div class="relative w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden border-2 border-luxury-gold/20 shadow-gold-lg animate-glow-pulse z-10">
               <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800"
-                alt="Alex Chen"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUrvJY2DYG8n52H2oJ6klZxDw73WNkBiivl4hzLtqqoQ&s=10"
+                alt="Abednego Bogi"
                 class="w-full h-full object-cover no-drag"
               />
               <!-- Shimmer overlay -->
@@ -253,6 +270,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ── Background photo (slow ken-burns for a premium feel) ── */
+.hero-bg {
+  animation: heroZoom 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes heroZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg { animation: none; }
+}
+
 /* ── Orbs ── */
 .orb {
   position: absolute;

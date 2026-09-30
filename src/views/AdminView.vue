@@ -36,6 +36,7 @@
       <ProjectsManager v-else-if="activeTab === 'projects'" />
       <ExperiencesManager v-else-if="activeTab === 'experiences'" />
       <UsersManager v-else-if="activeTab === 'users'" />
+      <MessagesManager v-else-if="activeTab === 'messages'" />
     </div>
   </main>
 </template>
@@ -46,6 +47,7 @@ import SkillsManager from '@/components/admin/SkillsManager.vue'
 import ProjectsManager from '@/components/admin/ProjectsManager.vue'
 import ExperiencesManager from '@/components/admin/ExperiencesManager.vue'
 import UsersManager from '@/components/admin/UsersManager.vue'
+import MessagesManager from '@/components/admin/MessagesManager.vue'
 
 const activeTab = ref('skills')
 
@@ -54,5 +56,6 @@ const tabs = [
   { value: 'projects', label: 'Projects' },
   { value: 'experiences', label: 'Experiences' },
   { value: 'users', label: 'Users' },
+  { value: 'messages', label: 'Messages' },
 ]
 </script>

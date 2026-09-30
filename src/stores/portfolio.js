@@ -122,6 +122,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   const experiences = ref([...fallbackExperiences])
 
   const isLoading = ref(false)
+  const isLoaded = ref(false)
   const error = ref(null)
   let unsubscribe = null
 
@@ -152,6 +153,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       console.error('[portfolio] Failed to load Firestore data:', e)
     } finally {
       isLoading.value = false
+      isLoaded.value = true
     }
   }
 
@@ -199,6 +201,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     projects,
     experiences,
     isLoading,
+    isLoaded,
     error,
     toggleDarkMode,
     setActiveSection,

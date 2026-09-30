@@ -165,7 +165,7 @@
                 </transition>
               </button>
 
-              <!-- Success message -->
+              <!-- Success / error message -->
               <transition
                 enter-active-class="transition-all duration-400 ease-out"
                 enter-from-class="opacity-0 translate-y-2"
@@ -174,11 +174,23 @@
                 leave-from-class="opacity-100"
                 leave-to-class="opacity-0"
               >
-                <div v-if="submitted" class="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-xl text-emerald-400 text-sm">
+                <div
+                  v-if="status"
+                  class="flex items-center gap-3 p-4 rounded-xl text-sm"
+                  :class="status.type === 'success'
+                    ? 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400'
+                    : 'bg-red-500/10 border border-red-500/25 text-red-400'"
+                  role="alert"
+                >
                   <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <path
+                      stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      :d="status.type === 'success'
+                        ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                        : 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'"
+                    />
                   </svg>
-                  Message sent! I'll get back to you shortly.
+                  {{ status.text }}
                 </div>
               </transition>
             </form>
@@ -191,6 +203,8 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '@/firebase'
 import { useScrollReveal } from '@/composables/useScrollReveal'
 
 const { reveal } = useScrollReveal()
@@ -200,28 +214,84 @@ const formRef   = ref(null)
 
 const form = reactive({ name: '', email: '', subject: '', message: '' })
 const isSubmitting = ref(false)
-const submitted    = ref(false)
+const status = ref(null) // { type: 'success' | 'error', text: string }
+let statusTimer = null
+
+const RECIPIENT = 'venturaabedbogichrist314@gmail.com'
 
 const contactInfo = [
-  { icon: '📧', label: 'Email',    value: 'alex.chen@example.com', href: 'mailto:alex.chen@example.com' },
-  { icon: '📱', label: 'Phone',    value: '+1 (555) 123-4567',      href: 'tel:+15551234567' },
-  { icon: '📍', label: 'Location', value: 'San Francisco, CA',      href: '#' },
+  { icon: '📧', label: 'Email',    value: 'venturaabedbogichrist314@gmail.com', href: 'mailto:venturaabedbogichrist314@gmail.com' },
+  { icon: '📱', label: 'Phone',    value: '+62 813 3417 8147',      href: 'https://wa.me/6281334178147' },
+  { icon: '📍', label: 'Location', value: 'Jakarta, Indonesia',      href: '#' },
 ]
 
 const socialLinks = [
-  { name: 'GitHub',   icon: '🐙', url: 'https://github.com' },
-  { name: 'LinkedIn', icon: '💼', url: 'https://linkedin.com' },
-  { name: 'Twitter',  icon: '𝕏',  url: 'https://twitter.com' },
-  { name: 'Dribbble', icon: '🎨', url: 'https://dribbble.com' },
+  { name: 'GitHub',   icon: '🐙', url: 'https://github.com/AbogiC' },
+  { name: 'LinkedIn', icon: '💼', url: 'https://www.linkedin.com/in/abednego-bogi-christian-9304a61aa/' },
+  { name: 'Instagram',  icon: '📸',  url: 'https://www.instagram.com/abednegobogi/?hl=en' },
 ]
 
+function showStatus(type, text) {
+  status.value = { type, text }
+  clearTimeout(statusTimer)
+  statusTimer = setTimeout(() => { status.value = null }, 8000)
+}
+
+async function sendEmail({ name, email, subject, message }) {
+  const res = await fetch(`https://formsubmit.co/ajax/${RECIPIENT}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      name,
+      email, // FormSubmit uses this as the Reply-To sender
+      _subject: `Portfolio contact: ${subject}`,
+      _template: 'table',
+      _captcha: 'false',
+      message: `Subject: ${subject}\n\n${message}\n\n— ${name} (${email})`,
+    }),
+  })
+  if (!res.ok) throw new Error(`Email service responded with ${res.status}`)
+}
+
 async function handleSubmit() {
+  const name = form.name.trim()
+  const email = form.email.trim()
+  const subject = form.subject.trim()
+  const message = form.message.trim()
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !subject || !message) {
+    showStatus('error', 'Please fill in your name, a valid email, subject and message.')
+    return
+  }
+
   isSubmitting.value = true
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  isSubmitting.value = false
-  submitted.value    = true
-  Object.assign(form, { name: '', email: '', subject: '', message: '' })
-  setTimeout(() => { submitted.value = false }, 5000)
+  try {
+    // 1. Store in Firestore so nothing is ever lost (visible in admin inbox).
+    await addDoc(collection(db, 'contact_messages'), {
+      name: name.slice(0, 60),
+      email: email.slice(0, 100),
+      subject: subject.slice(0, 120),
+      message: message.slice(0, 2000),
+      read: false,
+      createdAt: serverTimestamp(),
+    })
+
+    // 2. Deliver to the work inbox with the guest's email as Reply-To.
+    try {
+      await sendEmail({ name, email, subject, message })
+      showStatus('success', 'Message sent! I\'ll get back to you shortly.')
+    } catch {
+      showStatus(
+        'success',
+        'Message received! Email notification is pending, but I can already read it in my inbox.'
+      )
+    }
+    Object.assign(form, { name: '', email: '', subject: '', message: '' })
+  } catch (e) {
+    console.error('[contact] submit failed:', e)
+    showStatus('error', 'Could not send your message. Please try again or email me directly.')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 onMounted(() => {

@@ -25,7 +25,7 @@
             type="text"
             required
             autocomplete="name"
-            placeholder="Alex Chen"
+            placeholder="Abednego Bogi"
             class="auth-input"
           />
         </div>

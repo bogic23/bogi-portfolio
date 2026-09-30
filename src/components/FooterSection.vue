@@ -19,7 +19,7 @@
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-luxury-gold to-luxury-bronze flex items-center justify-center shadow-gold-sm group-hover:shadow-gold-md transition-all duration-300 group-hover:scale-105">
             <span class="text-luxury-darker font-bold text-sm">AC</span>
           </div>
-          <span class="font-display text-xl font-bold gold-gradient-static">Alex Chen</span>
+          <span class="font-display text-xl font-bold gold-gradient-static">Abednego Bogi</span>
         </div>
 
         <!-- Nav links -->
@@ -50,7 +50,7 @@
       <!-- Bottom row -->
       <div class="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p class="text-gray-600 text-xs">
-          © {{ currentYear }} Alex Chen. All rights reserved.
+          © {{ currentYear }} Abednego Bogi. All rights reserved.
         </p>
 
         <p class="text-gray-700 text-xs flex items-center gap-1.5">
