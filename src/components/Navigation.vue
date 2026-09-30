@@ -49,7 +49,14 @@
 
           <!-- Auth area -->
           <template v-if="authStore.user">
-            <span class="ml-2 px-3 py-2 text-xs text-gray-500 truncate max-w-40">
+            <RouterLink
+              v-if="authStore.isAdmin"
+              to="/admin"
+              class="ml-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors duration-300"
+            >
+              Dashboard
+            </RouterLink>
+            <span class="px-3 py-2 text-xs text-gray-500 truncate max-w-40">
               {{ authStore.user.displayName || authStore.user.email }}
             </span>
             <button
@@ -124,13 +131,22 @@
           >
             <span>Login / Register</span>
           </RouterLink>
-          <button
-            v-else
-            @click="handleLogout"
-            class="mobile-item w-full text-left px-6 py-4 text-sm font-medium text-gray-400"
-          >
-            <span>Logout ({{ authStore.user.displayName || authStore.user.email }})</span>
-          </button>
+          <template v-else>
+            <RouterLink
+              v-if="authStore.isAdmin"
+              to="/admin"
+              @click="mobileMenuOpen = false"
+              class="mobile-item w-full text-left px-6 py-4 text-sm font-medium text-luxury-gold border-b border-white/5"
+            >
+              <span>Dashboard</span>
+            </RouterLink>
+            <button
+              @click="handleLogout"
+              class="mobile-item w-full text-left px-6 py-4 text-sm font-medium text-gray-400"
+            >
+              <span>Logout ({{ authStore.user.displayName || authStore.user.email }})</span>
+            </button>
+          </template>
         </div>
       </transition>
     </div>

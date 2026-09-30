@@ -44,12 +44,17 @@ rules_version = '2';
 // Fields:
 //   - email: string (required, valid email, immutable, must match auth token)
 //   - displayName: string (required, 1-60 chars)
-//   - role: string (required, MUST be "guest" — locked, immutable)
+//   - role: string (required, "guest" by default; only an admin can grant
+//     "admin", and nobody can change their own role)
 //   - createdAt: timestamp (required, immutable)
 //   - updatedAt: timestamp (required)
-// NOTE: users contains PII (email) → NO public reads, NO list queries.
+// NOTE: users contains PII (email) → NO public reads, NO public list.
+// Admins (role == "admin") can list/get all users and manage roles.
+// The FIRST admin must be promoted manually via Firebase Console
+// (Console bypasses rules): set users/{uid}.role = "admin".
 // Role escalation is blocked: create requires role == "guest" and update
-// requires role to stay unchanged.
+// requires role to stay unchanged unless performed by an admin on
+// ANOTHER user.
 //
 // App queries (all unauthenticated, must stay allowed):
 //   - getDocs(collection(db, 'skills'))
@@ -61,6 +66,11 @@ rules_version = '2';
 // Authenticated queries:
 //   - getDoc(doc(db, 'users', uid)) — owner-only get (no list)
 //   - setDoc(doc(db, 'users', uid), {...}) on register / first login
+//
+// Admin queries (role == "admin" only):
+//   - getDocs(collection(db, 'users')) — user management list
+//   - create/update/delete on skills, projects, experiences
+//   - update users/{otherUid} role between "guest" and "admin"
 //
 // ===============================================================
 
@@ -145,6 +155,18 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
     }
 
+    function adminDoc() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    // True when the caller is an authenticated admin. Fails closed when
+    // the caller's own user doc is missing.
+    function isAdmin() {
+      return isAuthenticated() &&
+        exists(adminDoc()) &&
+        get(adminDoc()).data.role == 'admin';
+    }
+
     // ===============================================================
     // Domain Validators (enforced if writes are ever enabled;
     // client writes are currently denied below per public-view-only)
@@ -195,38 +217,49 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    // Admin variant: same strict schema, but role may be "guest" or "admin"
+    // and the email belongs to ANOTHER user (no token-email match).
+    function isValidUserProfileAsAdmin(data) {
+      return hasOnlyAllowedFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        hasRequiredFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.email is string && isValidEmail(data.email) && data.email.size() <= 100 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+        data.role in ['guest', 'admin'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // ===============================================================
     // Portfolio collections — PUBLIC READ, NO CLIENT WRITES
     // ===============================================================
 
     match /skills/{docId} {
       allow get, list: if true;
-      // Public view only: deny all client writes. To open managed
-      // writes later, replace `false` with an admin check AND keep
-      // the validator, e.g.:
-      //   allow create: if isAuthenticated() && isValidSkill(request.resource.data);
-      //   allow update: if isAuthenticated() && isValidSkill(request.resource.data);
-      allow create, update, delete: if false;
+      // Public view only for regular users; admins manage content.
+      allow create, update: if isAdmin() && isValidSkill(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /projects/{docId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update: if isAdmin() && isValidProject(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /experiences/{docId} {
       allow get, list: if true;
-      allow create, update, delete: if false;
+      allow create, update: if isAdmin() && isValidExperience(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     // ===============================================================
-    // Users — PRIVATE, owner-only. Default role is always "guest".
+    // Users — PRIVATE, owner-only + admin management.
     // ===============================================================
 
     match /users/{userId} {
-      // Owner-only read. No `list` → users cannot enumerate accounts.
-      allow get: if isOwner(userId);
-      allow list: if false;
+      // Owner-only read, plus full read for admins. No public list.
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       // Owner creates ONLY their own doc, role locked to "guest",
       // email must match the verified auth token email.
       allow create: if isOwner(userId) &&
@@ -235,12 +268,21 @@ service cloud.firestore {
         request.resource.data.email == request.auth.token.email;
       // Owner updates ONLY their own doc: schema stays valid, and
       // email / role / createdAt can never change (no escalation).
-      allow update: if isOwner(userId) &&
-        isValidUserProfile(request.resource.data) &&
-        areImmutableFieldsUnchanged(['email', 'role', 'createdAt']) &&
-        request.resource.data.email == request.auth.token.email;
+      // Admins may edit OTHER users (e.g. grant/revoke "admin") under
+      // the admin schema, but can never change their OWN role
+      // (prevents accidental self-lockout).
+      allow update: if (isOwner(userId) &&
+          isValidUserProfile(request.resource.data) &&
+          areImmutableFieldsUnchanged(['email', 'role', 'createdAt']) &&
+          request.resource.data.email == request.auth.token.email) ||
+        (isAdmin() &&
+          isValidUserProfileAsAdmin(request.resource.data) &&
+          areImmutableFieldsUnchanged(['email', 'createdAt']) &&
+          (request.auth.uid != userId ||
+            request.resource.data.role == resource.data.role));
       // Owner may delete their own profile (account cleanup).
-      allow delete: if isOwner(userId);
+      // Admins may remove any profile doc (does NOT delete the Auth user).
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // Default deny everything else.

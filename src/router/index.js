@@ -20,6 +20,12 @@ const router = createRouter({
       name: 'register',
       component: () => import('@/views/RegisterView.vue'),
       meta: { guestOnly: true }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/AdminView.vue'),
+      meta: { requiresAdmin: true }
     }
   ],
   scrollBehavior(to, from, savedPosition) {
@@ -30,9 +36,19 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to) => {
-  if (to.meta.guestOnly && useAuthStore().user) {
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore()
+  if (to.meta.guestOnly && authStore.user) {
     return { name: 'home' }
+  }
+  if (to.meta.requiresAdmin) {
+    await authStore.awaitReady()
+    if (!authStore.user) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+    if (!authStore.isAdmin) {
+      return { name: 'home' }
+    }
   }
 })
 

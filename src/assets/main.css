@@ -261,6 +261,72 @@
     border: 1px solid rgba(212, 175, 55, 0.25);
     color: #d4af37;
   }
+
+  /* ── ADMIN DASHBOARD ── */
+  .admin-input {
+    @apply w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .admin-input::placeholder {
+    color: #525252;
+  }
+
+  .admin-input:focus {
+    outline: none;
+    border-color: rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+  }
+
+  select.admin-input option {
+    background-color: #111;
+    color: #fff;
+  }
+
+  .admin-label {
+    @apply block text-xs font-medium text-gray-400 tracking-wide mb-1.5;
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 rounded-xl text-sm font-semibold;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #f87171;
+    transition: all 0.2s ease;
+  }
+
+  .btn-danger:hover {
+    background: rgba(248, 113, 113, 0.2);
+    box-shadow: 0 0 16px rgba(248, 113, 113, 0.25);
+  }
+
+  .btn-ghost-sm {
+    @apply px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost-sm:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .admin-table th {
+    @apply text-left text-xs font-semibold uppercase tracking-wider text-gray-500 px-4 py-3;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3 text-sm align-top;
+  }
+
+  .admin-table tbody tr {
+    @apply border-t border-white/5;
+    transition: background 0.2s ease;
+  }
+
+  .admin-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
 }
 
 /* ─────────────────────────────────────────────

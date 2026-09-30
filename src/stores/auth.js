@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -73,6 +73,22 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref(null)
   const initialized = ref(false)
+
+  const isAdmin = computed(() => profile.value?.role === 'admin')
+
+  // Resolves once the initial onAuthStateChanged + profile load completes.
+  // Used by router guards so /admin doesn't redirect before role is known.
+  function awaitReady() {
+    if (initialized.value) return Promise.resolve()
+    return new Promise((resolve) => {
+      const stop = watch(initialized, (v) => {
+        if (v) {
+          stop()
+          resolve()
+        }
+      })
+    })
+  }
 
   function setUser(firebaseUser) {
     user.value = firebaseUser
@@ -188,6 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     user,
     profile,
+    isAdmin,
     isLoading,
     error,
     initialized,
@@ -196,5 +213,6 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithGoogle,
     logout,
     initAuth,
+    awaitReady,
   }
 })
