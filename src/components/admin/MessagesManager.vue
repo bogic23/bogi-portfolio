@@ -10,6 +10,11 @@
       <button @click="fetchItems" class="btn-ghost-sm !px-4 !py-2 !text-sm">↻ Refresh</button>
     </div>
 
+    <p class="text-xs text-gray-600 mb-4">
+      Messages are saved here by the contact-form function. Confirmation emails
+      go to guests via Resend — see delivery logs in the Resend dashboard.
+    </p>
+
     <p v-if="listError" class="text-sm text-red-400/90 mb-4" role="alert">{{ listError }}</p>
     <p v-if="isLoading" class="text-sm text-gray-500">Loading messages…</p>
 

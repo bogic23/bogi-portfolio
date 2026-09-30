@@ -85,6 +85,7 @@
                   v-model="form.name"
                   type="text"
                   required
+                  maxlength="60"
                   class="input-floating"
                   placeholder=" "
                   id="contact-name"
@@ -99,6 +100,7 @@
                   v-model="form.email"
                   type="email"
                   required
+                  maxlength="100"
                   class="input-floating"
                   placeholder=" "
                   id="contact-email"
@@ -113,6 +115,7 @@
                   v-model="form.subject"
                   type="text"
                   required
+                  maxlength="120"
                   class="input-floating"
                   placeholder=" "
                   id="contact-subject"
@@ -125,6 +128,7 @@
                 <textarea
                   v-model="form.message"
                   required
+                  maxlength="2000"
                   rows="5"
                   class="textarea-floating"
                   placeholder=" "
@@ -203,8 +207,6 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '@/firebase'
 import { useScrollReveal } from '@/composables/useScrollReveal'
 
 const { reveal } = useScrollReveal()
@@ -217,7 +219,12 @@ const isSubmitting = ref(false)
 const status = ref(null) // { type: 'success' | 'error', text: string }
 let statusTimer = null
 
-const RECIPIENT = 'venturaabedbogichrist314@gmail.com'
+const FUNCTIONS_REGION = 'asia-southeast1'
+
+function contactFunctionUrl() {
+  const projectId = import.meta.env.VITE_PROJECT_ID
+  return `https://${FUNCTIONS_REGION}-${projectId}.cloudfunctions.net/sendContactEmail`
+}
 
 const contactInfo = [
   { icon: '📧', label: 'Email',    value: 'venturaabedbogichrist314@gmail.com', href: 'mailto:venturaabedbogichrist314@gmail.com' },
@@ -237,22 +244,6 @@ function showStatus(type, text) {
   statusTimer = setTimeout(() => { status.value = null }, 8000)
 }
 
-async function sendEmail({ name, email, subject, message }) {
-  const res = await fetch(`https://formsubmit.co/ajax/${RECIPIENT}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      name,
-      email, // FormSubmit uses this as the Reply-To sender
-      _subject: `Portfolio contact: ${subject}`,
-      _template: 'table',
-      _captcha: 'false',
-      message: `Subject: ${subject}\n\n${message}\n\n— ${name} (${email})`,
-    }),
-  })
-  if (!res.ok) throw new Error(`Email service responded with ${res.status}`)
-}
-
 async function handleSubmit() {
   const name = form.name.trim()
   const email = form.email.trim()
@@ -265,30 +256,27 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    // 1. Store in Firestore so nothing is ever lost (visible in admin inbox).
-    await addDoc(collection(db, 'contact_messages'), {
-      name: name.slice(0, 60),
-      email: email.slice(0, 100),
-      subject: subject.slice(0, 120),
-      message: message.slice(0, 2000),
-      read: false,
-      createdAt: serverTimestamp(),
+    // One call does everything server-side: saves to Firestore (admin
+    // inbox) and sends the confirmation email to the guest.
+    const res = await fetch(contactFunctionUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ name, email, subject, message }),
     })
-
-    // 2. Deliver to the work inbox with the guest's email as Reply-To.
-    try {
-      await sendEmail({ name, email, subject, message })
-      showStatus('success', 'Message sent! I\'ll get back to you shortly.')
-    } catch {
-      showStatus(
-        'success',
-        'Message received! Email notification is pending, but I can already read it in my inbox.'
-      )
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || `Request failed with ${res.status}`)
     }
+    showStatus(
+      'success',
+      data.emailDelivered
+        ? 'Message sent! A confirmation email is on its way to your inbox.'
+        : 'Message received! The confirmation email is pending, but I can already read it in my inbox.'
+    )
     Object.assign(form, { name: '', email: '', subject: '', message: '' })
   } catch (e) {
     console.error('[contact] submit failed:', e)
-    showStatus('error', 'Could not send your message. Please try again or email me directly.')
+    showStatus('error', e?.message ?? 'Could not send your message. Please try again or email me directly.')
   } finally {
     isSubmitting.value = false
   }

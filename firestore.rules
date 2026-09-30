@@ -67,23 +67,20 @@ rules_version = '2';
 //   - getDoc(doc(db, 'users', uid)) — owner-only get (no list)
 //   - setDoc(doc(db, 'users', uid), {...}) on register / first login
 //
+// Collection: contact_messages (written ONLY by the sendContactEmail
+// Cloud Function via the Admin SDK — clients have zero write access)
+// Document ID: auto-ID (string)
+// Fields:
+//   - name, email, subject, message, read, createdAt (see function)
+// NOTE: contains PII (email) → reads are admin-only. The `create` rule
+// stays denied: all writes go through the function (Admin SDK bypasses
+// rules). Admins may flip `read` or delete via the dashboard inbox.
+//
 // Admin queries (role == "admin" only):
 //   - getDocs(collection(db, 'users')) — user management list
 //   - create/update/delete on skills, projects, experiences
 //   - update users/{otherUid} role between "guest" and "admin"
-//   - read/update/delete on contact_messages (contact inbox)
-//
-// Collection: contact_messages (guestbook-style inbox from contact form)
-// Document ID: auto-ID (string)
-// Fields:
-//   - name: string (required, 1-60 chars)
-//   - email: string (required, valid email, max 100 chars)
-//   - subject: string (required, 1-120 chars)
-//   - message: string (required, 1-2000 chars)
-//   - read: bool (required — guests create with false, admins toggle it)
-//   - createdAt: timestamp (required, immutable)
-// NOTE: contains PII (email) → public CREATE only, reads are admin-only.
-// Guests can never update/delete; admins may toggle `read` or delete.
+//   - get/list/update/delete on contact_messages (contact inbox)
 //
 // ===============================================================
 
@@ -242,17 +239,6 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
-    function isValidContactMessage(data) {
-      return hasOnlyAllowedFields(['name', 'email', 'subject', 'message', 'read', 'createdAt']) &&
-        hasRequiredFields(['name', 'email', 'subject', 'message', 'read', 'createdAt']) &&
-        data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
-        data.email is string && isValidEmail(data.email) && data.email.size() <= 100 &&
-        data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 120 &&
-        data.message is string && data.message.size() >= 1 && data.message.size() <= 2000 &&
-        data.read is bool &&
-        data.createdAt is timestamp;
-    }
-
     // ===============================================================
     // Portfolio collections — PUBLIC READ, NO CLIENT WRITES
     // ===============================================================
@@ -310,15 +296,15 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // Contact inbox — PUBLIC CREATE, admin-only reads/management.
+    // Contact inbox — server-side writes only, admin-only reads.
     // ===============================================================
 
     match /contact_messages/{msgId} {
-      // Guests submit; admins read. No public reads (contains PII).
+      // No public access at all (contains PII). Writes happen only in
+      // the sendContactEmail function via the Admin SDK.
       allow get, list: if isAdmin();
-      allow create: if isValidContactMessage(request.resource.data) &&
-        request.resource.data.read == false;
-      // Guests can never edit; admins may only flip the `read` flag.
+      allow create: if false;
+      // Admins may only flip the `read` flag from the dashboard inbox.
       allow update: if isAdmin() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
         request.resource.data.read is bool;
