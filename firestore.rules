@@ -1,0 +1,200 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This portfolio site is PUBLIC READ-ONLY by explicit owner request.
+// No client writes are allowed; content is managed via Firebase
+// Console or Admin SDK (which bypass these rules).
+//
+// Collection: skills
+// Document ID: auto-ID or slug (string)
+// Fields:
+//   - name: string (required, 1-60 chars) - display name, also Vue :key
+//   - level: number (required, 0-100) - proficiency percent
+//   - category: string (required, one of frontend|backend|database|devops)
+//   - icon: string (optional, 0-10 chars) - emoji/text icon
+//   - order: number (optional, >= 0) - sort position
+//
+// Collection: projects
+// Document ID: auto-ID (string)
+// Fields:
+//   - title: string (required, 1-100 chars)
+//   - description: string (required, 1-1000 chars)
+//   - tech: list<string> (required, 1-15 items, each 1-30 chars)
+//   - image: string (required, valid http/https URL, max 500 chars)
+//   - github: string (optional, URL or "#" placeholder, max 500 chars)
+//   - demo: string (optional, URL or "#" placeholder, max 500 chars)
+//   - featured: bool (required)
+//   - order: number (optional, >= 0) - sort position
+//
+// Collection: experiences
+// Document ID: auto-ID (string)
+// Fields:
+//   - role: string (required, 1-100 chars)
+//   - company: string (required, 1-100 chars)
+//   - period: string (required, 1-40 chars, e.g. "2022 - Present")
+//   - description: string (required, 1-1000 chars)
+//   - achievements: list<string> (required, 1-15 items, each 1-200 chars)
+//   - order: number (optional, >= 0) - sort position
+//
+// App queries (all unauthenticated, must stay allowed):
+//   - getDocs(collection(db, 'skills'))
+//   - getDocs(collection(db, 'projects'))
+//   - getDocs(collection(db, 'experiences'))
+//   - onSnapshot(collection(db, ...)) on the same three collections
+// No where()/orderBy()/limit() clauses — plain collection list + get.
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) ||
+        request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidUrl(url) {
+      return url is string &&
+        (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isValidLink(value) {
+      // Allows real URLs plus the "#" placeholder used before launch.
+      return value is string && value.size() <= 500 &&
+        (value == "#" || value.matches("^https://.*") || value.matches("^http://.*"));
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidStringList(field, maxItems, maxItemLen) {
+      return request.resource.data[field] is list &&
+        request.resource.data[field].size() >= 1 &&
+        request.resource.data[field].size() <= maxItems;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is string &&
+          request.resource.data[field].size() >= minLen &&
+          request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidOptionalOrder() {
+      return !('order' in request.resource.data) ||
+        (request.resource.data.order is number && request.resource.data.order >= 0);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators (enforced if writes are ever enabled;
+    // client writes are currently denied below per public-view-only)
+    // ===============================================================
+
+    function isValidSkill(data) {
+      let allowedCategories = ['frontend', 'backend', 'database', 'devops'];
+      return hasOnlyAllowedFields(['name', 'level', 'category', 'icon', 'order']) &&
+        hasRequiredFields(['name', 'level', 'category']) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+        data.level is number && data.level >= 0 && data.level <= 100 &&
+        data.category in allowedCategories &&
+        (!('icon' in data) || (data.icon is string && data.icon.size() <= 10)) &&
+        (!('order' in data) || (data.order is number && data.order >= 0));
+    }
+
+    function isValidProject(data) {
+      return hasOnlyAllowedFields(['title', 'description', 'tech', 'image', 'github', 'demo', 'featured', 'order']) &&
+        hasRequiredFields(['title', 'description', 'tech', 'image', 'featured']) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+        data.tech is list && data.tech.size() >= 1 && data.tech.size() <= 15 &&
+        data.image is string && data.image.size() <= 500 &&
+          (data.image.matches("^https://.*") || data.image.matches("^http://.*")) &&
+        data.featured is bool &&
+        (!('order' in data) || (data.order is number && data.order >= 0));
+    }
+
+    function isValidExperience(data) {
+      return hasOnlyAllowedFields(['role', 'company', 'period', 'description', 'achievements', 'order']) &&
+        hasRequiredFields(['role', 'company', 'period', 'description', 'achievements']) &&
+        data.role is string && data.role.size() >= 1 && data.role.size() <= 100 &&
+        data.company is string && data.company.size() >= 1 && data.company.size() <= 100 &&
+        data.period is string && data.period.size() >= 1 && data.period.size() <= 40 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+        data.achievements is list && data.achievements.size() >= 1 && data.achievements.size() <= 15 &&
+        (!('order' in data) || (data.order is number && data.order >= 0));
+    }
+
+    // ===============================================================
+    // Portfolio collections — PUBLIC READ, NO CLIENT WRITES
+    // ===============================================================
+
+    match /skills/{docId} {
+      allow get, list: if true;
+      // Public view only: deny all client writes. To open managed
+      // writes later, replace `false` with an admin check AND keep
+      // the validator, e.g.:
+      //   allow create: if isAuthenticated() && isValidSkill(request.resource.data);
+      //   allow update: if isAuthenticated() && isValidSkill(request.resource.data);
+      allow create, update, delete: if false;
+    }
+
+    match /projects/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /experiences/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    // Default deny everything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
