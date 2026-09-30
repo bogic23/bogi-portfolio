@@ -25,8 +25,9 @@
           >
             <div class="aspect-square rounded-2xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800"
-                alt="Workspace"
+                src="https://lh3.googleusercontent.com/d/1569GIFRL1mNpQvxUXAM4cuJOEiYZ8D-y=w1000"
+                referrerpolicy="no-referrer"
+                alt="Abednego Bogi"
                 class="w-full h-full object-cover no-drag transition-transform duration-700 hover:scale-105"
               />
             </div>

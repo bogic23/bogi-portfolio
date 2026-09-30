@@ -102,7 +102,8 @@
             <!-- Avatar image -->
             <div class="relative w-64 h-64 md:w-80 md:h-80 rounded-full overflow-hidden border-2 border-luxury-gold/20 shadow-gold-lg animate-glow-pulse z-10">
               <img
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSUrvJY2DYG8n52H2oJ6klZxDw73WNkBiivl4hzLtqqoQ&s=10"
+                src="https://lh3.googleusercontent.com/d/1TbTFQydj5nIFs0eyYALr92X4mLc4gHlo=w1000"
+                referrerpolicy="no-referrer"
                 alt="Abednego Bogi"
                 class="w-full h-full object-cover no-drag"
               />
