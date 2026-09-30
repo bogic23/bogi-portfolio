@@ -17,14 +17,7 @@
     ></div>
 
     <Navigation />
-    <main>
-      <HeroSection />
-      <AboutSection />
-      <SkillsSection />
-      <ProjectsSection />
-      <ExperienceSection />
-      <ContactSection />
-    </main>
+    <RouterView />
     <FooterSection />
   </div>
 </template>
@@ -32,12 +25,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import Navigation from '@/components/Navigation.vue'
-import HeroSection from '@/components/HeroSection.vue'
-import AboutSection from '@/components/AboutSection.vue'
-import SkillsSection from '@/components/SkillsSection.vue'
-import ProjectsSection from '@/components/ProjectsSection.vue'
-import ExperienceSection from '@/components/ExperienceSection.vue'
-import ContactSection from '@/components/ContactSection.vue'
 import FooterSection from '@/components/FooterSection.vue'
 
 const cursor = ref({ x: -100, y: -100 })

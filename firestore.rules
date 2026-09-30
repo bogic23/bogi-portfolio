@@ -39,12 +39,28 @@ rules_version = '2';
 //   - achievements: list<string> (required, 1-15 items, each 1-200 chars)
 //   - order: number (optional, >= 0) - sort position
 //
+// Collection: users  (private — owner-only, created at register/login)
+// Document ID: Firebase Auth UID (string, must equal request.auth.uid)
+// Fields:
+//   - email: string (required, valid email, immutable, must match auth token)
+//   - displayName: string (required, 1-60 chars)
+//   - role: string (required, MUST be "guest" — locked, immutable)
+//   - createdAt: timestamp (required, immutable)
+//   - updatedAt: timestamp (required)
+// NOTE: users contains PII (email) → NO public reads, NO list queries.
+// Role escalation is blocked: create requires role == "guest" and update
+// requires role to stay unchanged.
+//
 // App queries (all unauthenticated, must stay allowed):
 //   - getDocs(collection(db, 'skills'))
 //   - getDocs(collection(db, 'projects'))
 //   - getDocs(collection(db, 'experiences'))
 //   - onSnapshot(collection(db, ...)) on the same three collections
 // No where()/orderBy()/limit() clauses — plain collection list + get.
+//
+// Authenticated queries:
+//   - getDoc(doc(db, 'users', uid)) — owner-only get (no list)
+//   - setDoc(doc(db, 'users', uid), {...}) on register / first login
 //
 // ===============================================================
 
@@ -168,6 +184,17 @@ service cloud.firestore {
         (!('order' in data) || (data.order is number && data.order >= 0));
     }
 
+    function isValidUserProfile(data) {
+      return hasOnlyAllowedFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        hasRequiredFields(['email', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.email is string && isValidEmail(data.email) && data.email.size() <= 100 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+        // Role lockdown: only "guest" may ever be written from a client.
+        data.role == 'guest' &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
     // ===============================================================
     // Portfolio collections — PUBLIC READ, NO CLIENT WRITES
     // ===============================================================
@@ -190,6 +217,30 @@ service cloud.firestore {
     match /experiences/{docId} {
       allow get, list: if true;
       allow create, update, delete: if false;
+    }
+
+    // ===============================================================
+    // Users — PRIVATE, owner-only. Default role is always "guest".
+    // ===============================================================
+
+    match /users/{userId} {
+      // Owner-only read. No `list` → users cannot enumerate accounts.
+      allow get: if isOwner(userId);
+      allow list: if false;
+      // Owner creates ONLY their own doc, role locked to "guest",
+      // email must match the verified auth token email.
+      allow create: if isOwner(userId) &&
+        isValidUserProfile(request.resource.data) &&
+        request.resource.data.role == 'guest' &&
+        request.resource.data.email == request.auth.token.email;
+      // Owner updates ONLY their own doc: schema stays valid, and
+      // email / role / createdAt can never change (no escalation).
+      allow update: if isOwner(userId) &&
+        isValidUserProfile(request.resource.data) &&
+        areImmutableFieldsUnchanged(['email', 'role', 'createdAt']) &&
+        request.resource.data.email == request.auth.token.email;
+      // Owner may delete their own profile (account cleanup).
+      allow delete: if isOwner(userId);
     }
 
     // Default deny everything else.

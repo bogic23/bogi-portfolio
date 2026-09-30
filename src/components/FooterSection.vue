@@ -64,7 +64,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const currentYear  = new Date().getFullYear()
 const showBackToTop = ref(false)
@@ -82,7 +86,11 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function scrollToSection(id) {
+async function scrollToSection(id) {
+  if (route.name !== 'home') {
+    await router.push('/')
+    await nextTick()
+  }
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
 }
 

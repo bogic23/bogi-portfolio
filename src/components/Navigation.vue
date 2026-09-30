@@ -46,6 +46,26 @@
               aria-hidden="true"
             ></span>
           </button>
+
+          <!-- Auth area -->
+          <template v-if="authStore.user">
+            <span class="ml-2 px-3 py-2 text-xs text-gray-500 truncate max-w-40">
+              {{ authStore.user.displayName || authStore.user.email }}
+            </span>
+            <button
+              @click="handleLogout"
+              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white transition-colors duration-300"
+            >
+              Logout
+            </button>
+          </template>
+          <RouterLink
+            v-else
+            to="/login"
+            class="ml-2 px-5 py-2 rounded-full text-sm font-medium bg-luxury-gold/10 border border-luxury-gold/25 text-luxury-gold hover:bg-luxury-gold/20 transition-all duration-300"
+          >
+            Login
+          </RouterLink>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -95,6 +115,22 @@
               class="w-1.5 h-1.5 rounded-full bg-luxury-gold"
             ></span>
           </button>
+          <!-- Auth entry -->
+          <RouterLink
+            v-if="!authStore.user"
+            to="/login"
+            @click="mobileMenuOpen = false"
+            class="mobile-item w-full text-left px-6 py-4 text-sm font-medium text-luxury-gold border-b border-white/5"
+          >
+            <span>Login / Register</span>
+          </RouterLink>
+          <button
+            v-else
+            @click="handleLogout"
+            class="mobile-item w-full text-left px-6 py-4 text-sm font-medium text-gray-400"
+          >
+            <span>Logout ({{ authStore.user.displayName || authStore.user.email }})</span>
+          </button>
         </div>
       </transition>
     </div>
@@ -102,12 +138,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/stores/portfolio'
+import { useAuthStore } from '@/stores/auth'
 import { storeToRefs } from 'pinia'
 
 const store = usePortfolioStore()
 const { activeSection } = storeToRefs(store)
+const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
 const scrolled = ref(false)
 const mobileMenuOpen = ref(false)
@@ -121,10 +162,20 @@ const menuItems = [
   { id: 'contact',    label: 'Contact' },
 ]
 
-function scrollToSection(id) {
+async function scrollToSection(id) {
+  if (route.name !== 'home') {
+    await router.push('/')
+    await nextTick()
+  }
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   store.setActiveSection(id)
   mobileMenuOpen.value = false
+}
+
+async function handleLogout() {
+  await authStore.logout()
+  mobileMenuOpen.value = false
+  router.push('/')
 }
 
 function handleScroll() {
