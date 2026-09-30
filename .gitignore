@@ -39,5 +39,9 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 .vscode
+.agents
+.claude
+.firebase
 
 .env
+.firebaserc
